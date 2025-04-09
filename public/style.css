@@ -1,0 +1,15 @@
+body.light {
+  background-color: #f9f9f9;
+  color: #111;
+}
+body.light #chat {
+  background-color: #fff;
+}
+body.light input {
+  background-color: #eee;
+  color: #111;
+}
+body.light button {
+  background-color: #4f46e5;
+  color: white;
+}

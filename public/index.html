@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Local Chat</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="h-screen flex flex-col bg-gray-900 text-white">
+
+  <!-- نمایش پیام‌ها -->
+  <div id="chat" class="flex-grow overflow-y-auto p-4 flex flex-col space-y-4" id="messagesContainer"></div>
+
+  <!-- فرم ارسال -->
+  <div class="p-4 bg-gray-800">
+    <div class="flex items-center gap-2">
+      <input id="messageInput" type="text" placeholder="Type a message..." class="flex-grow p-2 rounded-xl bg-gray-700 text-white" />
+      <button onclick="sendMessage()" class="bg-blue-600 px-4 py-2 rounded-xl hover:bg-blue-500">Send</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    window.username = localStorage.getItem("username") || prompt("Enter your name:");
+    localStorage.setItem("username", window.username);
+
+    const chatContainer = document.getElementById("chat");
+
+    function addMessage({ username, text, date, time }) {
+      const wrapper = document.createElement("div");
+      wrapper.className = username === window.username ? "self-end text-right" : "self-start text-left";
+
+      const name = document.createElement("div");
+      name.className = "text-sm font-semibold text-blue-300 mb-1";
+      name.textContent = username;
+
+      const bubble = document.createElement("div");
+      bubble.className = "inline-block max-w-md bg-white/10 text-white p-3 rounded-2xl backdrop-blur-sm";
+      bubble.textContent = text;
+
+      const timestamp = document.createElement("div");
+      timestamp.className = "text-xs text-gray-400 mt-1";
+      timestamp.textContent = `${date || ""} ${time || ""}`;
+
+      wrapper.appendChild(name);
+      wrapper.appendChild(bubble);
+      wrapper.appendChild(timestamp);
+      chatContainer.appendChild(wrapper);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const text = input.value.trim();
+      if (text === "") return;
+
+      socket.emit("send_message", {
+        username: window.username,
+        text: text
+      });
+
+      input.value = "";
+    }
+
+    socket.on("receive_message", data => {
+      addMessage(data);
+    });
+
+    // Load old messages
+    window.onload = () => {
+      fetch('/messages')
+        .then(res => res.json())
+        .then(messages => {
+          messages.forEach(msg => addMessage(msg));
+        });
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>
